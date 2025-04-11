@@ -6,13 +6,12 @@ use bevy_ecs::{
     resource::Resource,
     system::{Res, ResMut, SystemChangeTick},
 };
-use bevy_platform::collections::HashMap;
+use bevy_platform::{collections::HashMap, uuid::Uuid};
 use bevy_reflect::{Reflect, TypePath};
 use core::{any::TypeId, iter::Enumerate, marker::PhantomData, sync::atomic::AtomicU32};
 use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use uuid::Uuid;
 
 /// A generational runtime-only identifier for a specific [`Asset`] stored in [`Assets`]. This is optimized for efficient runtime
 /// usage and is not suitable for identifying assets across app runs.

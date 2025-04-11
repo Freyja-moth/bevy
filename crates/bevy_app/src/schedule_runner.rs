@@ -3,15 +3,8 @@ use crate::{
     plugin::Plugin,
     PluginsState,
 };
-use bevy_platform::time::Instant;
+use bevy_platform::{if_not_web, if_web_else, time::Instant};
 use core::time::Duration;
-
-#[cfg(all(target_arch = "wasm32", feature = "web"))]
-use {
-    alloc::{boxed::Box, rc::Rc},
-    core::cell::RefCell,
-    wasm_bindgen::{prelude::*, JsCast},
-};
 
 /// Determines the method used to run an [`App`]'s [`Schedule`](bevy_ecs::schedule::Schedule).
 ///
@@ -77,8 +70,9 @@ impl Plugin for ScheduleRunnerPlugin {
             let plugins_state = app.plugins_state();
             if plugins_state != PluginsState::Cleaned {
                 while app.plugins_state() == PluginsState::Adding {
-                    #[cfg(not(all(target_arch = "wasm32", feature = "web")))]
-                    bevy_tasks::tick_global_task_pools_on_main_thread();
+                    if_not_web!(
+                        bevy_tasks::tick_global_task_pools_on_main_thread();
+                    );
                 }
                 app.finish();
                 app.cleanup();
@@ -118,8 +112,16 @@ impl Plugin for ScheduleRunnerPlugin {
                         Ok(None)
                     };
 
-                    cfg_if::cfg_if! {
-                        if #[cfg(all(target_arch = "wasm32", feature = "web"))] {
+                    if_web_else!(
+                        {
+                            use {
+                                alloc::{boxed::Box, rc::Rc},
+                                bevy_platform::web::{
+                                    wasm_bindgen::{prelude::*, JsCast},
+                                    web_sys,
+                                },
+                                core::cell::RefCell,
+                            };
                             fn set_timeout(callback: &Closure<dyn FnMut()>, dur: Duration) {
                                 web_sys::window()
                                     .unwrap()
@@ -156,7 +158,8 @@ impl Plugin for ScheduleRunnerPlugin {
                             set_timeout(base_tick_closure.borrow().as_ref().unwrap(), asap);
 
                             exit.take()
-                        } else {
+                        },
+                        {
                             loop {
                                 match tick(&mut app, wait) {
                                     Ok(Some(delay)) => {
@@ -167,7 +170,7 @@ impl Plugin for ScheduleRunnerPlugin {
                                 }
                             }
                         }
-                    }
+                    )
                 }
             }
         });

@@ -32,15 +32,6 @@ std = ["futures-lite/std", "async-task/std", "bevy_platform/std"]
 ## on all platforms, including `no_std`.
 critical-section = ["bevy_platform/critical-section"]
 
-## Enables use of browser APIs.
-## Note this is currently only applicable on `wasm32` architectures.
-web = [
-  "bevy_platform/web",
-  "dep:wasm-bindgen-futures",
-  "dep:pin-project",
-  "dep:futures-channel",
-]
-
 [dependencies]
 bevy_platform = { path = "../bevy_platform", version = "0.16.0-dev", default-features = false, features = [
   "alloc",
@@ -65,9 +56,9 @@ crossbeam-queue = { version = "0.3", default-features = false, features = [
 ] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen-futures = { version = "0.4", optional = true }
-pin-project = { version = "1", optional = true }
-futures-channel = { version = "0.3", optional = true }
+# TODO: these deps are only required for "web" features
+pin-project = { version = "1" }
+futures-channel = { version = "0.3" }
 
 [target.'cfg(not(all(target_has_atomic = "8", target_has_atomic = "16", target_has_atomic = "32", target_has_atomic = "64", target_has_atomic = "ptr")))'.dependencies]
 async-task = { version = "4.4.0", default-features = false, features = [

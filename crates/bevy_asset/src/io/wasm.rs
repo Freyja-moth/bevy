@@ -2,12 +2,14 @@ use crate::io::{
     get_meta_path, AssetReader, AssetReaderError, EmptyPathStream, PathStream, Reader, VecReader,
 };
 use alloc::{borrow::ToOwned, boxed::Box, format};
-use js_sys::{Uint8Array, JSON};
+use bevy_platform::web::{
+    js_sys::{self, Uint8Array, JSON},
+    wasm_bindgen::{self, prelude::wasm_bindgen, JsCast, JsValue},
+    wasm_bindgen_futures::JsFuture,
+    web_sys::{self, Response},
+};
 use std::path::{Path, PathBuf};
 use tracing::error;
-use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
-use wasm_bindgen_futures::JsFuture;
-use web_sys::Response;
 
 /// Represents the global object in the JavaScript context
 #[wasm_bindgen]

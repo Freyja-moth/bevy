@@ -7,6 +7,7 @@
 //! `DefaultPlugins` during app initialization.
 
 use crate::{App, Plugin};
+use bevy_platform::if_web_else;
 
 /// Adds sensible panic handlers to Apps. This plugin is part of the `DefaultPlugins`. Adding
 /// this plugin will setup a panic hook appropriate to your target platform:
@@ -43,18 +44,23 @@ impl Plugin for PanicHandlerPlugin {
         {
             static SET_HOOK: std::sync::Once = std::sync::Once::new();
             SET_HOOK.call_once(|| {
-                cfg_if::cfg_if! {
-                    if #[cfg(all(target_arch = "wasm32", feature = "web"))] {
+                if_web_else!(
+                    {
                         // This provides better panic handling in JS engines (displays the panic message and improves the backtrace).
-                        std::panic::set_hook(alloc::boxed::Box::new(console_error_panic_hook::hook));
-                    } else if #[cfg(feature = "error_panic_hook")] {
-                        let current_hook = std::panic::take_hook();
                         std::panic::set_hook(alloc::boxed::Box::new(
-                            bevy_ecs::error::bevy_error_panic_hook(current_hook),
+                            bevy_platform::web::console_error_panic_hook::hook,
                         ));
+                    },
+                    {
+                        #[cfg(feature = "error_panic_hook")]
+                        {
+                            let current_hook = std::panic::take_hook();
+                            std::panic::set_hook(alloc::boxed::Box::new(
+                                bevy_ecs::error::bevy_error_panic_hook(current_hook),
+                            ));
+                        } // Otherwise use the default target panic hook - Do nothing.
                     }
-                    // Otherwise use the default target panic hook - Do nothing.
-                }
+                );
             });
         }
     }

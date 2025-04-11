@@ -1,4 +1,5 @@
 use alloc::boxed::Box;
+use bevy_platform::web::wasm_bindgen_futures;
 use core::{
     any::Any,
     future::{Future, IntoFuture},

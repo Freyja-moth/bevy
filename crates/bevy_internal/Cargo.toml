@@ -353,13 +353,7 @@ async_executor = [
 
 # Enables use of browser APIs.
 # Note this is currently only applicable on `wasm32` architectures.
-web = [
-  "bevy_app/web",
-  "bevy_log/web",
-  "bevy_platform/web",
-  "bevy_reflect/web",
-  "bevy_tasks/web",
-]
+web = ["bevy_platform/web"]
 
 [dependencies]
 # bevy (no_std)

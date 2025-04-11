@@ -3,6 +3,7 @@ use crate::{
     UntypedAssetId,
 };
 use alloc::sync::Arc;
+use bevy_platform::uuid::Uuid;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect, TypePath};
 use core::{
     any::TypeId,
@@ -11,7 +12,6 @@ use core::{
 use crossbeam_channel::{Receiver, Sender};
 use disqualified::ShortName;
 use thiserror::Error;
-use uuid::Uuid;
 
 /// Provides [`Handle`] and [`UntypedHandle`] _for a specific asset type_.
 /// This should _only_ be used for one specific asset type.

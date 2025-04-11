@@ -13,8 +13,9 @@ pub mod file;
 pub mod gated;
 pub mod memory;
 pub mod processor_gated;
-#[cfg(target_arch = "wasm32")]
-pub mod wasm;
+if_web!(
+    pub mod wasm;
+);
 
 mod source;
 
@@ -22,7 +23,7 @@ pub use futures_lite::AsyncWriteExt;
 pub use source::*;
 
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use bevy_tasks::{BoxedFuture, ConditionalSendFuture};
+use bevy_platform::future::{BoxedFuture, ConditionalSendFuture};
 use core::future::Future;
 use core::{
     mem::size_of,
@@ -79,6 +80,7 @@ impl From<std::io::Error> for AssetReaderError {
 // a higher maximum necessary.
 pub const STACK_FUTURE_SIZE: usize = 10 * size_of::<&()>();
 
+use bevy_platform::if_web;
 pub use stackfuture::StackFuture;
 
 /// Asynchronously advances the cursor position by a specified number of bytes.

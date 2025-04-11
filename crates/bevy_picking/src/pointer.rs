@@ -11,13 +11,10 @@
 use bevy_ecs::prelude::*;
 use bevy_input::mouse::MouseScrollUnit;
 use bevy_math::Vec2;
-use bevy_platform::collections::HashMap;
+use bevy_platform::{collections::HashMap, uuid::Uuid};
 use bevy_reflect::prelude::*;
 use bevy_render::camera::{Camera, NormalizedRenderTarget};
 use bevy_window::PrimaryWindow;
-
-use uuid::Uuid;
-
 use core::{fmt::Debug, ops::Deref};
 
 use crate::backend::HitData;

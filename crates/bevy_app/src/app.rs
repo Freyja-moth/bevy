@@ -16,7 +16,7 @@ use bevy_ecs::{
     schedule::{InternedSystemSet, ScheduleBuildSettings, ScheduleLabel},
     system::{IntoObserverSystem, ScheduleSystem, SystemId, SystemInput},
 };
-use bevy_platform::collections::HashMap;
+use bevy_platform::{collections::HashMap, if_not_web};
 use core::{fmt::Debug, num::NonZero, panic::AssertUnwindSafe};
 use log::debug;
 
@@ -1340,8 +1340,9 @@ type RunnerFn = Box<dyn FnOnce(App) -> AppExit>;
 
 fn run_once(mut app: App) -> AppExit {
     while app.plugins_state() == PluginsState::Adding {
-        #[cfg(not(all(target_arch = "wasm32", feature = "web")))]
-        bevy_tasks::tick_global_task_pools_on_main_thread();
+        if_not_web!(
+            bevy_tasks::tick_global_task_pools_on_main_thread();
+        );
     }
     app.finish();
     app.cleanup();

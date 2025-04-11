@@ -15,7 +15,7 @@ use alloc::{
     boxed::Box,
     string::{String, ToString},
 };
-use bevy_tasks::{BoxedFuture, ConditionalSendFuture};
+use bevy_platform::future::{BoxedFuture, ConditionalSendFuture};
 use core::marker::PhantomData;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

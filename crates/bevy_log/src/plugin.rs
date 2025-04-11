@@ -7,6 +7,7 @@ use core::error::Error;
 use std::eprintln;
 
 use bevy_app::{App, Plugin};
+use bevy_platform::if_web;
 use tracing::Level;
 use tracing_log::LogTracer;
 use tracing_subscriber::{
@@ -308,12 +309,11 @@ impl Plugin for LogPlugin {
             finished_subscriber = subscriber;
         }
 
-        #[cfg(target_arch = "wasm32")]
-        {
-            finished_subscriber = subscriber.with(tracing_wasm::WASMLayer::new(
-                tracing_wasm::WASMLayerConfig::default(),
+        if_web!(
+            finished_subscriber = subscriber.with(bevy_platform::web::tracing_wasm::WASMLayer::new(
+                bevy_platform::web::tracing_wasm::WASMLayerConfig::default(),
             ));
-        }
+        );
 
         #[cfg(target_os = "android")]
         {

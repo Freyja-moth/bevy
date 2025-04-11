@@ -11,48 +11,45 @@ extern crate std;
 
 extern crate alloc;
 
-mod conditional_send {
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            /// Use [`ConditionalSend`] to mark an optional Send trait bound. Useful as on certain platforms (eg. Wasm),
-            /// futures aren't Send.
-            pub trait ConditionalSend {}
-            impl<T> ConditionalSend for T {}
-        } else {
-            /// Use [`ConditionalSend`] to mark an optional Send trait bound. Useful as on certain platforms (eg. Wasm),
-            /// futures aren't Send.
-            pub trait ConditionalSend: Send {}
-            impl<T: Send> ConditionalSend for T {}
-        }
-    }
-}
-
-pub use conditional_send::*;
-
-/// Use [`ConditionalSendFuture`] for a future with an optional Send trait bound, as on certain platforms (eg. Wasm),
-/// futures aren't Send.
-pub trait ConditionalSendFuture: Future + ConditionalSend {}
-impl<T: Future + ConditionalSend> ConditionalSendFuture for T {}
-
-use alloc::boxed::Box;
-
-/// An owned and dynamically typed Future used when you can't statically type your result or need to add some indirection.
-pub type BoxedFuture<'a, T> = core::pin::Pin<Box<dyn ConditionalSendFuture<Output = T> + 'a>>;
-
 pub mod futures;
+/// The tasks prelude.
+///
+/// This includes the most common types in this crate, re-exported for your convenience.
+pub mod prelude {
+    #[doc(hidden)]
+    pub use crate::{
+        iter::ParallelIterator,
+        slice::{ParallelSlice, ParallelSliceMut},
+        usages::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool},
+    };
+
+    #[cfg(feature = "std")]
+    #[doc(hidden)]
+    pub use crate::block_on;
+}
 
 #[cfg(not(feature = "async_executor"))]
 mod edge_executor;
-
 mod executor;
-
+mod iter;
 mod slice;
-pub use slice::{ParallelSlice, ParallelSliceMut};
+mod usages;
+if_web!(
+    mod wasm_task;
+    pub use wasm_task::Task;
+);
+if_not_web!(
+    mod task;
+    pub use task::Task;
+);
 
-#[cfg_attr(all(target_arch = "wasm32", feature = "web"), path = "wasm_task.rs")]
-mod task;
+pub use futures_lite;
+pub use futures_lite::future::poll_once;
+pub use iter::ParallelIterator;
+pub use slice::*;
+pub use usages::*;
 
-pub use task::Task;
+use bevy_platform::{if_not_web, if_web};
 
 cfg_if::cfg_if! {
     if #[cfg(all(not(target_arch = "wasm32"), feature = "multi_threaded"))] {
@@ -68,13 +65,6 @@ cfg_if::cfg_if! {
     }
 }
 
-mod usages;
-pub use futures_lite::future::poll_once;
-pub use usages::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool};
-
-#[cfg(not(all(target_arch = "wasm32", feature = "web")))]
-pub use usages::tick_global_task_pools_on_main_thread;
-
 #[cfg(feature = "std")]
 cfg_if::cfg_if! {
     if #[cfg(feature = "async-io")] {
@@ -82,27 +72,6 @@ cfg_if::cfg_if! {
     } else {
         pub use futures_lite::future::block_on;
     }
-}
-
-mod iter;
-pub use iter::ParallelIterator;
-
-pub use futures_lite;
-
-/// The tasks prelude.
-///
-/// This includes the most common types in this crate, re-exported for your convenience.
-pub mod prelude {
-    #[doc(hidden)]
-    pub use crate::{
-        iter::ParallelIterator,
-        slice::{ParallelSlice, ParallelSliceMut},
-        usages::{AsyncComputeTaskPool, ComputeTaskPool, IoTaskPool},
-    };
-
-    #[cfg(feature = "std")]
-    #[doc(hidden)]
-    pub use crate::block_on;
 }
 
 cfg_if::cfg_if! {

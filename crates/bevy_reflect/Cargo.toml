@@ -39,9 +39,6 @@ petgraph = ["dep:petgraph", "std"]
 ## Adds reflection support to `smallvec` types.
 smallvec = ["dep:smallvec"]
 
-## Adds reflection support to `uuid` types.
-uuid = ["dep:uuid"]
-
 ## Adds reflection support to `wgpu-types` types.
 wgpu-types = ["dep:wgpu-types"]
 
@@ -57,7 +54,6 @@ std = [
   "serde/std",
   "glam?/std",
   "smol_str?/std",
-  "uuid?/std",
   "bevy_platform/std",
   "wgpu-types?/std",
 ]
@@ -68,10 +64,6 @@ critical-section = [
   "bevy_platform/critical-section",
   "bevy_utils/critical-section",
 ]
-
-## Enables use of browser APIs.
-## Note this is currently only applicable on `wasm32` architectures.
-web = ["bevy_platform/web", "uuid?/js"]
 
 [dependencies]
 # bevy
@@ -106,10 +98,6 @@ petgraph = { version = "0.7", features = ["serde-1"], optional = true }
 smol_str = { version = "0.2.0", default-features = false, features = [
   "serde",
 ], optional = true }
-uuid = { version = "1.13.1", default-features = false, optional = true, features = [
-  "v4",
-  "serde",
-] }
 variadics_please = "1.1"
 wgpu-types = { version = "24", features = [
   "serde",

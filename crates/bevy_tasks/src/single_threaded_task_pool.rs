@@ -1,5 +1,5 @@
 use alloc::{string::String, vec::Vec};
-use bevy_platform::sync::Arc;
+use bevy_platform::{if_web_else, sync::Arc};
 use core::{cell::RefCell, future::Future, marker::PhantomData, mem};
 
 use crate::Task;
@@ -199,10 +199,9 @@ impl TaskPool {
     where
         T: 'static + MaybeSend + MaybeSync,
     {
-        cfg_if::cfg_if! {
-            if #[cfg(all(target_arch = "wasm32", feature = "web"))] {
-                Task::wrap_future(future)
-            } else if #[cfg(feature = "std")] {
+        if_web_else!({ Task::wrap_future(future) }, {
+            #[cfg(feature = "std")]
+            {
                 LOCAL_EXECUTOR.with(|executor| {
                     let task = executor.spawn(future);
                     // Loop until all tasks are done
@@ -210,16 +209,16 @@ impl TaskPool {
 
                     Task::new(task)
                 })
-            } else {
-                {
-                    let task = LOCAL_EXECUTOR.spawn(future);
-                    // Loop until all tasks are done
-                    while LOCAL_EXECUTOR.try_tick() {}
-
-                    Task::new(task)
-                }
             }
-        }
+            #[cfg(not(feature = "std"))]
+            {
+                let task = LOCAL_EXECUTOR.spawn(future);
+                // Loop until all tasks are done
+                while LOCAL_EXECUTOR.try_tick() {}
+
+                Task::new(task)
+            }
+        })
     }
 
     /// Spawns a static future on the JS event loop. This is exactly the same as [`TaskPool::spawn`].

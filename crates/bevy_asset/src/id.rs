@@ -1,7 +1,7 @@
 use crate::{Asset, AssetIndex};
+use bevy_platform::uuid::Uuid;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use core::{
     any::TypeId,

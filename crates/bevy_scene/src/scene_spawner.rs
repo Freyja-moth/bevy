@@ -8,10 +8,12 @@ use bevy_ecs::{
     resource::Resource,
     world::{Mut, World},
 };
-use bevy_platform::collections::{HashMap, HashSet};
+use bevy_platform::{
+    collections::{HashMap, HashSet},
+    uuid::Uuid,
+};
 use bevy_reflect::Reflect;
 use thiserror::Error;
-use uuid::Uuid;
 
 use crate::{DynamicSceneRoot, SceneRoot};
 use bevy_derive::{Deref, DerefMut};

@@ -1,8 +1,7 @@
 use crate::{meta::Settings, Asset, ErasedLoadedAsset, Handle, LabeledAsset, UntypedHandle};
 use alloc::boxed::Box;
 use atomicow::CowArc;
-use bevy_platform::collections::HashMap;
-use bevy_tasks::ConditionalSendFuture;
+use bevy_platform::{collections::HashMap, future::ConditionalSendFuture};
 use core::{
     borrow::Borrow,
     convert::Infallible,

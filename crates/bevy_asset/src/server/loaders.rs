@@ -14,7 +14,7 @@ use tracing::warn;
 #[cfg(feature = "trace")]
 use {
     alloc::string::ToString,
-    bevy_tasks::ConditionalSendFuture,
+    bevy_platform::future::ConditionalSendFuture,
     tracing::{info_span, instrument::Instrument},
 };
 

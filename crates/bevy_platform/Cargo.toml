@@ -9,12 +9,12 @@ license = "MIT OR Apache-2.0"
 keywords = ["bevy"]
 
 [features]
-default = ["std"]
+default = ["std", "web"]
 
 # Functionality
 
 ## Adds serialization support through `serde`.
-serialize = ["dep:serde", "hashbrown/serde"]
+serialize = ["dep:serde", "hashbrown/serde", "uuid/serde"]
 
 ## Adds integration with Rayon.
 rayon = ["dep:rayon", "hashbrown/rayon"]
@@ -32,6 +32,7 @@ std = [
   "spin/std",
   "foldhash/std",
   "serde?/std",
+  "uuid/std",
 ]
 
 ## Allows access to the `alloc` crate.
@@ -43,10 +44,22 @@ critical-section = ["dep:critical-section", "portable-atomic/critical-section"]
 
 ## Enables use of browser APIs.
 ## Note this is currently only applicable on `wasm32` architectures.
-web = ["dep:web-time", "dep:getrandom"]
+web = [
+  "web-time",
+  "getrandom",
+  "wasm-bindgen",
+  "web-sys",
+  "tracing-wasm",
+  "console_error_panic_hook",
+  "uuid/js",
+]
 
 [dependencies]
 cfg-if = "1.0.0"
+uuid = { version = "1.13.1", default-features = false, features = [
+  "v4",
+  "serde",
+] }
 critical-section = { version = "1.2.0", default-features = false, optional = true }
 spin = { version = "0.9.8", default-features = false, features = [
   "mutex",
@@ -66,6 +79,17 @@ rayon = { version = "1", default-features = false, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-time = { version = "1.1", default-features = false, optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", optional = true, features = [
+  "Window",
+  # used by bevy_asset
+  "Response",
+  "WorkerGlobalScope",
+] }
+js-sys = "0.3"
+tracing-wasm = { version = "0.2.1", optional = true }
+console_error_panic_hook = { version = "0.1.6", optional = true }
 getrandom = { version = "0.2.0", default-features = false, optional = true, features = [
   "js",
 ] }
