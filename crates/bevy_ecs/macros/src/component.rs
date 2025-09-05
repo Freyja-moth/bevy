@@ -269,6 +269,11 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
         .then_some(quote! { #bevy_ecs_path::component::Immutable })
         .unwrap_or(quote! { #bevy_ecs_path::component::Mutable });
 
+    let static_type = attrs
+        .r#static
+        .then_some(quote! {#bevy_ecs_path::component::Static})
+        .unwrap_or(quote! { #bevy_ecs_path::component::NonStatic });
+
     let clone_behavior = if relationship_target.is_some() || relationship.is_some() {
         quote!(
             use #bevy_ecs_path::relationship::{
@@ -293,6 +298,7 @@ pub fn derive_component(input: TokenStream) -> TokenStream {
         impl #impl_generics #bevy_ecs_path::component::Component for #struct_name #type_generics #where_clause {
             const STORAGE_TYPE: #bevy_ecs_path::component::StorageType = #storage;
             type Mutability = #mutable_type;
+            type Staticness = #static_type;
             fn register_required_components(
                 _requiree: #bevy_ecs_path::component::ComponentId,
                 required_components: &mut #bevy_ecs_path::component::RequiredComponentsRegistrator,
@@ -426,6 +432,7 @@ pub const ON_DESPAWN: &str = "on_despawn";
 pub const MAP_ENTITIES: &str = "map_entities";
 
 pub const IMMUTABLE: &str = "immutable";
+pub const STATIC: &str = "static";
 pub const CLONE_BEHAVIOR: &str = "clone_behavior";
 
 /// All allowed attribute value expression kinds for component hooks.
@@ -543,6 +550,7 @@ struct Attrs {
     relationship: Option<Relationship>,
     relationship_target: Option<RelationshipTarget>,
     immutable: bool,
+    r#static: bool,
     clone_behavior: Option<Expr>,
     map_entities: Option<MapEntitiesAttributeKind>,
 }
@@ -583,6 +591,7 @@ fn parse_component_attr(ast: &DeriveInput) -> Result<Attrs> {
         relationship: None,
         relationship_target: None,
         immutable: false,
+        r#static: false,
         clone_behavior: None,
         map_entities: None,
     };
@@ -619,6 +628,9 @@ fn parse_component_attr(ast: &DeriveInput) -> Result<Attrs> {
                     Ok(())
                 } else if nested.path.is_ident(IMMUTABLE) {
                     attrs.immutable = true;
+                    Ok(())
+                } else if nested.path.is_ident(STATIC) {
+                    attrs.r#static = true;
                     Ok(())
                 } else if nested.path.is_ident(CLONE_BEHAVIOR) {
                     attrs.clone_behavior = Some(nested.value()?.parse()?);

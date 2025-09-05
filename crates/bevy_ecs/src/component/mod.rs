@@ -496,6 +496,14 @@ pub trait Component: Send + Sync + 'static {
     /// * For a component to be immutable, this type must be [`Immutable`].
     type Mutability: ComponentMutability;
 
+    /// A marker type to assist Bevy with determining if this component is
+    /// static, or non-static. Static components will have [`Component<Mutability = Static>`],
+    /// while non-static components will instead have [`Component<Mutability = NonStatic>`].
+    ///
+    /// * For a component to be static, this type must be [`Static`].
+    /// * For a component to be non-static, this type must be [`NonStatic`].
+    type Staticness: ComponentStaticness;
+
     /// Gets the `on_add` [`ComponentHook`] for this [`Component`] if one is defined.
     fn on_add() -> Option<ComponentHook> {
         None
@@ -682,6 +690,53 @@ impl private::Seal for Mutable {}
 
 impl ComponentMutability for Mutable {
     const MUTABLE: bool = true;
+}
+
+/// The static option for a [`Component`]. This can either be:
+/// * [`Static`]
+/// * [`NonStatic`]
+///
+/// This is controlled through either [`Component::Staticness`] or `#[component(static)]`
+/// when using the derive macro.
+///
+/// Static components are guaranteed to always exist on an entity and cannot be removed or inserted.
+/// In all other ways they are identical to non-static components.
+///
+/// # Examples
+///
+/// ```rust
+/// # use bevy_ecs::component::Component;
+/// #
+/// #[derive(Component)]
+/// #[component(static)]
+/// struct ImmutableFoo;
+/// ```
+pub trait ComponentStaticness: private::Seal + 'static {
+    /// Boolean to indicate if this staticness setting implies a static or non-static
+    /// component.
+    const STATIC: bool;
+}
+
+/// Parameter indicating a [`Component`] is static.
+///
+/// See [`ComponentStaticness`] for details.
+pub struct Static;
+
+impl private::Seal for Static {}
+
+impl ComponentStaticness for Static {
+    const STATIC: bool = true;
+}
+
+/// Parameter indicating a [`Component`] is non-static.
+///
+/// See [`ComponentStaticness`] for details.
+pub struct NonStatic;
+
+impl private::Seal for NonStatic {}
+
+impl ComponentStaticness for NonStatic {
+    const STATIC: bool = false;
 }
 
 /// The storage used for a specific component type.
