@@ -306,13 +306,19 @@ pub trait ResultSeverityExt<T, E> {
     /// # Example
     /// ```
     /// # use bevy_ecs::error::{BevyError, ResultSeverityExt, Severity};
+    /// # use thiserror::Error;
     /// # fn validate(_string: &str) -> Result<(), ValidationError> {
     /// #     Err(ValidationError::IncorrectVersion)
     /// # }
+    ///
+    /// #[derive(Error, Debug)]
     /// pub enum ValidationError {
+    ///     #[error("Incorrect version")]
     ///     IncorrectVersion,
+    ///     #[error("Syntax error")]
     ///     SyntaxError,
     /// }
+    ///
     /// fn fallible() -> Result<(), BevyError> {
     ///     // This failure is expected in some contexts, so we downgrade its severity.
     ///     let _parsed: usize = validate("I am not a number")
