@@ -18,10 +18,11 @@ use core::{
 /// You can change the behavior of the fallback handler by modifying the [`FallbackErrorHandler`] resource.
 ///
 /// By default, errors without an assigned severity use [`Severity::Panic`], and will cause your application to panic.
-/// You can change the severity of an error by using [`with_severity`] on any [`Result`] type.
+/// You can change the severity of an error by using [`with_severity`], or [`map_severity`] on any [`Result`] type.
 ///
 /// [`FallbackErrorHandler`]: crate::error::handler::FallbackErrorHandler
 /// [`with_severity`]: ResultSeverityExt::with_severity
+/// [`map_severity`]: ResultSeverityExt::map_severity
 ///
 /// # Backtraces
 ///
@@ -242,9 +243,10 @@ struct InnerBevyError {
 /// you can modify the [fallback error handler], and read the [`Severity`] stored inside of each [`BevyError`].
 ///
 /// You can change the severity of an error (including assigning an error severity) to an ordinary result
-/// by calling [`with_severity`].
+/// by calling [`with_severity`] or [`map_severity`].
 ///
 /// [`with_severity`]: ResultSeverityExt::with_severity
+/// [`map_severity`]: ResultSeverityExt::map_severity
 /// [fallback error handler]: crate::error::handler::FallbackErrorHandler
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum Severity {
@@ -298,6 +300,8 @@ pub trait ResultSeverityExt<T, E> {
     ///     Ok(())
     /// }
     /// ```
+    ///
+    /// For more fine grained control see [`Result::map_severity`]
     fn with_severity(self, severity: Severity) -> Result<T, BevyError>;
 
     /// Overrides the [`Severity`] of the error if this result is `Err`.
@@ -329,6 +333,8 @@ pub trait ResultSeverityExt<T, E> {
     ///     Ok(())
     /// }
     /// ```
+    ///
+    /// If you don't need to inspect the error, use [`Result::with_severity`]
     fn map_severity(self, f: impl FnOnce(&E) -> Severity) -> Result<T, BevyError>;
 }
 
