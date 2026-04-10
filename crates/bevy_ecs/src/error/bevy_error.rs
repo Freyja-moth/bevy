@@ -283,7 +283,7 @@ impl BevyError {
 }
 
 /// Extension methods for annotating errors with a [`Severity`].
-pub trait ResultSeverityExt<T> {
+pub trait ResultSeverityExt<T, E> {
     /// Overrides the [`Severity`] of the error if this result is `Err`.
     /// This does not change control flow; it only annotates the error.
     ///
@@ -299,14 +299,47 @@ pub trait ResultSeverityExt<T> {
     /// }
     /// ```
     fn with_severity(self, severity: Severity) -> Result<T, BevyError>;
+
+    /// Overrides the [`Severity`] of the error if this result is `Err`.
+    /// This does not change control flow; it only annotates the error.
+    ///
+    /// # Example
+    /// ```
+    /// # use bevy_ecs::error::{BevyError, ResultSeverityExt, Severity};
+    /// # fn validate() -> Result<(), ValidationError> {
+    /// #     Err(ValidationError::IncorrectVersion)
+    /// # }
+    /// pub enum ValidationError {
+    ///     IncorrectVersion,
+    ///     SyntaxError,
+    /// }
+    /// fn fallible() -> Result<(), BevyError> {
+    ///     // This failure is expected in some contexts, so we downgrade its severity.
+    ///     let _parsed: usize = validate("I am not a number")
+    ///         .parse()
+    ///         .map_severity(|e| match e {
+    ///             ValidationError::IncorrectVersion => Severity::Debug,
+    ///             ValidationError::SyntaxError => Severity::Error,
+    ///         })?;
+    ///     Ok(())
+    /// }
+    /// ```
+    fn map_severity(self, f: impl FnOnce(&E) -> Severity) -> Result<T, BevyError>;
 }
 
-impl<T, E> ResultSeverityExt<T> for Result<T, E>
+impl<T, E> ResultSeverityExt<T, E> for Result<T, E>
 where
     E: Into<BevyError>,
 {
     fn with_severity(self, severity: Severity) -> Result<T, BevyError> {
         self.map_err(|e| e.into().with_severity(severity))
+    }
+
+    fn map_severity(self, f: impl FnOnce(&E) -> Severity) -> Result<T, BevyError> {
+        self.map_err(|e| {
+            let severity = f(&e);
+            e.into().with_severity(severity)
+        })
     }
 }
 

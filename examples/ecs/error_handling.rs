@@ -5,6 +5,8 @@ use bevy::ecs::{error::warn, world::DeferredWorld};
 use bevy::math::sampling::UniformMeshSampler;
 use bevy::prelude::*;
 
+use bevy_ecs::entity::SpawnError;
+use bevy_ecs::system::RunSystemOnce;
 use chacha20::ChaCha8Rng;
 use rand::distr::Distribution;
 use rand::SeedableRng;
@@ -158,6 +160,16 @@ fn failing_system(world: &mut World) -> Result {
         // The default error severity is Severity::Panic.
         // We can add a Severity level to any Result locally to downgrade it appropriately.
         .with_severity(Severity::Warning)?;
+
+    world
+        // This entity doesn't exist!
+        .spawn_empty_at(Entity::from_raw_u32(12345678).unwrap())
+        .map_severity(|e| match e {
+            // Not that concerning, we just need to make sure to find a different entity
+            SpawnError::AlreadySpawned => Severity::Debug,
+            // Oh no
+            SpawnError::Invalid(_) => Severity::Error,
+        })?;
 
     Ok(())
 }
