@@ -306,7 +306,7 @@ pub trait ResultSeverityExt<T, E> {
     /// # Example
     /// ```
     /// # use bevy_ecs::error::{BevyError, ResultSeverityExt, Severity};
-    /// # fn validate() -> Result<(), ValidationError> {
+    /// # fn validate(_string: &str) -> Result<(), ValidationError> {
     /// #     Err(ValidationError::IncorrectVersion)
     /// # }
     /// pub enum ValidationError {
@@ -316,7 +316,6 @@ pub trait ResultSeverityExt<T, E> {
     /// fn fallible() -> Result<(), BevyError> {
     ///     // This failure is expected in some contexts, so we downgrade its severity.
     ///     let _parsed: usize = validate("I am not a number")
-    ///         .parse()
     ///         .map_severity(|e| match e {
     ///             ValidationError::IncorrectVersion => Severity::Debug,
     ///             ValidationError::SyntaxError => Severity::Error,
