@@ -311,7 +311,7 @@ pub trait ResultSeverityExt<T, E> {
     /// ```
     /// # use bevy_ecs::error::{BevyError, ResultSeverityExt, Severity};
     /// # use thiserror::Error;
-    /// # fn validate(_string: &str) -> Result<(), ValidationError> {
+    /// # fn validate(_string: &str) -> Result<usize, ValidationError> {
     /// #     Err(ValidationError::IncorrectVersion)
     /// # }
     ///
