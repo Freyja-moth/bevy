@@ -23,7 +23,7 @@ fn character(world: &mut World, player: Entity) {
 
 With this a new variant has been added to `EntityTemplate` so that paths can be resolved in scenes
 
-```
+```rust
 fn player() -> impl Scene {
   bsn! {
     #Player
