@@ -55,7 +55,7 @@ use crate::{
     message::{Message, MessageId, Messages, WriteBatchIds},
     name::Name,
     observer::Observers,
-    prelude::{Add, Despawn, DetectChangesMut, Discard, Insert, Remove},
+    prelude::{Add, ChildOf, Despawn, DetectChangesMut, Discard, Insert, Remove},
     query::{DebugCheckedUnwrap, QueryData, QueryFilter, QueryState},
     relationship::{Relationship, RelationshipHookMode},
     resource::{IsResource, Resource, ResourceEntities, IS_RESOURCE},
@@ -1476,14 +1476,13 @@ impl World {
         self.flush();
         Ok(result)
     }
-    
-    
+
     /// Returns the entity that matches the given path along [`Children`].
     ///
     /// Segments of the path are defined by [`Name`].
     ///
     /// If multiple matching paths are found an error will be returned.
-    /// 
+    ///
     /// ```
     /// # use bevy_ecs::prelude::*;
     ///
@@ -1505,17 +1504,17 @@ impl World {
     pub fn get_entity_from_path(
         &self,
         path: &str,
-        root: Option<Entity>
+        root: Option<Entity>,
     ) -> Result<Entity, EntityPathError> {
-		self.get_entity_from_relationship_path::<ChildOf>(path, root)
-	}
+        self.get_entity_from_relationship_path::<ChildOf>(path, root)
+    }
 
     /// Returns the entity that matches the given path along [`R::RelationshipTarget`].
     ///
     /// Segments of the path are defined by [`Name`].
     ///
     /// If multiple matching paths are found an error will be returned.
-    /// 
+    ///
     /// ```
     /// # use bevy_ecs::prelude::*;
     ///
@@ -1551,7 +1550,7 @@ impl World {
             .iter()
             .filter(|(_, c)| c.as_str() == top)
             .filter(|(entity, _)| {
-                self.get_path_from_entity::<R>(*entity, root)
+                self.get_relationship_path_from_entity::<R>(*entity, root)
                     .is_ok_and(|p| path == p)
             })
             .map(|(entity, _)| entity);
@@ -1566,13 +1565,13 @@ impl World {
             Ok(entity)
         }
     }
-    
+
     /// Returns the path of an [`Entity`] following [`Children`]
-	/// 
-	/// If a root is not specified the absolute path is returned.
-	///
-	/// Each segment on the path is defined by [`Name`], if a [`Name`] does not exist on the base entity,
-	/// or one of it's ancestors an error will be returned.
+    ///
+    /// If a root is not specified the absolute path is returned.
+    ///
+    /// Each segment on the path is defined by [`Name`], if a [`Name`] does not exist on the base entity,
+    /// or one of it's ancestors an error will be returned.
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
@@ -1597,15 +1596,15 @@ impl World {
         entity: Entity,
         root: Option<Entity>,
     ) -> Result<String, EntityPathError> {
-	    self.get_relationship_path_from_entity::<ChildOf>(entity, root)
-	}
-	
-	/// Returns the path of an [`Entity`] following [`R::RelationshipTarget`]. 
-	/// 
-	/// If a root is not specified the absolute path is returned.
-	///
-	/// Each segment on the path is defined by [`Name`], if a [`Name`] does not exist on the base entity,
-	/// or one of it's ancestors an error will be returned.
+        self.get_relationship_path_from_entity::<ChildOf>(entity, root)
+    }
+
+    /// Returns the path of an [`Entity`] following [`R::RelationshipTarget`].
+    ///
+    /// If a root is not specified the absolute path is returned.
+    ///
+    /// Each segment on the path is defined by [`Name`], if a [`Name`] does not exist on the base entity,
+    /// or one of it's ancestors an error will be returned.
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
@@ -4649,8 +4648,8 @@ mod tests {
 
     #[test]
     fn entity_path_usage() {
-	    use crate::world::EntityPathError;
-		
+        use crate::world::EntityPathError;
+
         let mut world = World::new();
 
         let root1 = world.spawn(Name::new("1")).id();
@@ -4665,69 +4664,60 @@ mod tests {
 
         // All entities contain a `Name`-component.
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, None),
+            world.get_path_from_entity(grandchild1_1_1, None),
             Ok("1/1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("1/1_1/1_1_1", None),
+            world.get_entity_from_path("1/1_1/1_1_1", None),
             Ok(grandchild1_1_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, Some(root1)),
+            world.get_path_from_entity(grandchild1_1_1, Some(root1)),
             Ok("1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("1_1/1_1_1", Some(root1)),
+            world.get_entity_from_path("1_1/1_1_1", Some(root1)),
             Ok(grandchild1_1_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(child2_1, None),
+            world.get_path_from_entity(child2_1, None),
             Ok("2/2_1".into())
         );
+        assert_eq!(world.get_entity_from_path("2/2_1", None), Ok(child2_1));
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("2/2_1", None),
-            Ok(child2_1)
-        );
-        assert_eq!(
-            world.get_path_from_entity::<ChildOf>(child2_2, Some(root2)),
+            world.get_path_from_entity(child2_2, Some(root2)),
             Ok("2_2".into())
         );
+        assert_eq!(world.get_entity_from_path("2_2", Some(root2)), Ok(child2_2));
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("2_2", Some(root2)),
-            Ok(child2_2)
-        );
-        assert_eq!(
-            world.get_path_from_entity::<ChildOf>(child2_2, Some(root1)),
+            world.get_path_from_entity(child2_2, Some(root1)),
             Err(EntityPathError::RootIsNotAncestor(root1, child2_2))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("2_2", Some(root1)),
+            world.get_entity_from_path("2_2", Some(root1)),
             Err(EntityPathError::NoMatchingPath("2_2".into()))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("arbitrary", Some(root1)),
+            world.get_entity_from_path("arbitrary", Some(root1)),
             Err(EntityPathError::NoMatchingPath("arbitrary".into())),
         );
 
         // Create a child with the name of a sibling.
         let child1_1_duplicate = world.spawn((ChildOf(root1), Name::new("1_1"))).id();
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, None),
+            world.get_path_from_entity(grandchild1_1_1, None),
             Ok("1/1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>(
-                "1/1_1/1_1_1",
-                None
-            ),
+            world.get_entity_from_path("1/1_1/1_1_1", None),
             Ok(grandchild1_1_1),
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, Some(child1_1)),
+            world.get_path_from_entity(grandchild1_1_1, Some(child1_1)),
             Ok("1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("1_1_1", Some(child1_1)),
+            world.get_entity_from_path("1_1_1", Some(child1_1)),
             Ok(grandchild1_1_1)
         );
         world.despawn(child1_1_duplicate);
@@ -4735,50 +4725,47 @@ mod tests {
         // Remove `Name` from a root.
         world.entity_mut(root1).remove::<Name>();
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, None),
+            world.get_path_from_entity(grandchild1_1_1, None),
             Err(EntityPathError::BrokenPath(grandchild1_1_1))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("1/1_1/1_1_1", None,),
+            world.get_entity_from_path("1/1_1/1_1_1", None),
             Err(EntityPathError::NoMatchingPath("1/1_1/1_1_1".into()))
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, Some(root1)),
+            world.get_path_from_entity(grandchild1_1_1, Some(root1)),
             Ok("1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("1_1/1_1_1", Some(root1)),
+            world.get_entity_from_path("1_1/1_1_1", Some(root1)),
             Ok(grandchild1_1_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(child2_1, None),
+            world.get_path_from_entity(child2_1, None),
             Ok("2/2_1".into())
         );
-        assert_eq!(
-            world.get_entity_from_path::<ChildOf>("2/2_1", None),
-            Ok(child2_1)
-        );
+        assert_eq!(world.get_entity_from_path("2/2_1", None), Ok(child2_1));
 
         // Also remove `Name` from a child.
         world.entity_mut(child2_1).remove::<Name>();
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(child2_1, None),
+            world.get_path_from_entity(child2_1, None),
             Err(EntityPathError::BrokenPath(child2_1))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("2/2_1", None),
+            world.get_entity_from_path("2/2_1", None),
             Err(EntityPathError::NoMatchingPath("2/2_1".into()))
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf>(grandchild2_1_1, Some(child2_1)),
+            world.get_path_from_entity(grandchild2_1_1, Some(child2_1)),
             Ok("2_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf>("2_1_1", Some(child2_1)),
+            world.get_entity_from_path("2_1_1", Some(child2_1)),
             Ok(grandchild2_1_1)
         );
-        assert_eq!(world.get_path_from_entity::<ChildOf>(root2, None), Ok("2".into()));
-        assert_eq!(world.get_entity_from_path::<ChildOf>("2", None), Ok(root2));
+        assert_eq!(world.get_path_from_entity(root2, None), Ok("2".into()));
+        assert_eq!(world.get_entity_from_path("2", None), Ok(root2));
     }
 
     #[test]
