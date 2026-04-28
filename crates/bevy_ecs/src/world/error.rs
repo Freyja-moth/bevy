@@ -81,7 +81,12 @@ pub enum ResourceFetchError {
 ///
 /// - The path not matching
 /// - The path being ambiguous
-/// - The [`Relationship`]/[`Component`] being used aren't registered.
+///
+/// This can also be returned if the [`Component`] / [`Relationship`] you are using to resolve the
+/// path are not registered. However if this is the case the path would not be valid anyways.
+///
+/// [`Component`]: crate::component::Component
+/// [`Relationship`]: crate::relationship::Relationship
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[error("Entity path cannot be resolved")]
 pub struct EntityPathError;
