@@ -1496,7 +1496,7 @@ impl World {
     /// ```
     /// ["Root/Child/Grandchild"]
     /// ```
-    /// 
+    ///
     /// If multiple matching paths are found an error will be returned.
     ///
     /// ```
@@ -1544,7 +1544,7 @@ impl World {
     /// ```
     /// ["Root/Child/Grandchild"]
     /// ```
-    /// 
+    ///
     /// If multiple matching paths are found an error will be returned.
     ///
     /// ```
