@@ -80,7 +80,7 @@ pub enum ResourceFetchError {
 /// This could be due to
 ///
 /// - The path not matching
-/// - The path being ambigious
+/// - The path being ambiguous
 /// - The [`Relationship`]/[`Component`] being used aren't registered.
 #[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 #[error("Entity path cannot be resolved")]
