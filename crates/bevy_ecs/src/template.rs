@@ -404,7 +404,7 @@ impl<T: Clone + Default + Unpin> FromTemplate for T {
 pub trait SpecializeFromTemplate: Sized {}
 
 /// A [`Template`] reference to an [`Entity`].
-pub enum EntityReference {
+pub enum EntityTemplate {
     /// A reference to a specific [`Entity`]
     Entity(Entity),
     /// A path to a specific [`Entity`]. Resolved via [`World::get_entity_from_path::<ChildOf, Name>`]
@@ -427,13 +427,13 @@ pub struct ScopedEntityIndex {
     pub index: usize,
 }
 
-impl Default for EntityReference {
+impl Default for EntityTemplate {
     fn default() -> Self {
         Self::ScopedEntityIndex(ScopedEntityIndex { scope: 0, index: 0 })
     }
 }
 
-impl From<Entity> for EntityReference {
+impl From<Entity> for EntityTemplate {
     fn from(entity: Entity) -> Self {
         Self::Entity(entity)
     }
@@ -483,7 +483,7 @@ impl Template for EntityReference {
 }
 
 impl FromTemplate for Entity {
-    type Template = EntityReference;
+    type Template = EntityTemplate;
 }
 
 /// A [`Template`] driven by a function that returns an output. This is used to create "free floating" templates without
