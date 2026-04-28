@@ -1476,19 +1476,14 @@ impl World {
         self.flush();
         Ok(result)
     }
-
-    /// Returns the [`Entity`] specified by a given path relative to a root.
-    /// If no root entity is given, the path is treated as absolute, starting
-    /// with the world root elements.
+    
+    
+    /// Returns the entity that matches the given path along [`Children`].
     ///
-    /// The path consists of [`Component`]s that indicate some sort of naming.
-    /// Normally, the [`Name`](crate::name::Name)-component is used for that.
+    /// Segments of the path are defined by [`Name`].
     ///
-    /// The relative/absolute path has to be continuous among all participating
-    /// entities, except the root, if specified.
-    /// An empty path is invalid. Also every component that is referenced in the
-    /// path has to be unique among all its sibling's components to use this method.
-    ///
+    /// If multiple matching paths are found an error will be returned.
+    /// 
     /// ```
     /// # use bevy_ecs::prelude::*;
     ///
@@ -1499,15 +1494,47 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_entity_from_path::<ChildOf>("Root/Child/Grandchild", None),
-    ///     Some(grandchild)
+    ///     world.get_entity_from_path("Root/Child/Grandchild", None),
+    ///     Ok(grandchild)
     /// )
     /// assert_eq!(
-    ///     world.get_entity_from_path::<ChildOf>("Grandchild", None),
-    ///     Some(grandchild)
+    ///     world.get_entity_from_path("Grandchild", None),
+    ///     Ok(grandchild)
     /// );
     /// ```
-    pub fn get_entity_from_path<R: Relationship>(
+    pub fn get_entity_from_path(
+        &self,
+        path: &str,
+        root: Option<Entity>
+    ) -> Result<Entity, EntityPathError> {
+		self.get_entity_from_relationship_path::<ChildOf>(path, root)
+	}
+
+    /// Returns the entity that matches the given path along [`R::RelationshipTarget`].
+    ///
+    /// Segments of the path are defined by [`Name`].
+    ///
+    /// If multiple matching paths are found an error will be returned.
+    /// 
+    /// ```
+    /// # use bevy_ecs::prelude::*;
+    ///
+    /// let mut world = World::new();
+    ///
+    /// let root = world.spawn(Name::new("Root")).id();
+    /// let child = world.spawn((ChildOf(root), Name::new("Child"))).id();
+    /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
+    ///
+    /// assert_eq!(
+    ///     world.get_entity_from_relationship_path::<ChildOf>("Root/Child/Grandchild", None),
+    ///     Ok(grandchild)
+    /// )
+    /// assert_eq!(
+    ///     world.get_entity_from_relationship_path::<ChildOf>("Grandchild", None),
+    ///     Ok(grandchild)
+    /// );
+    /// ```
+    pub fn get_entity_from_relationship_path<R: Relationship>(
         &self,
         path: &str,
         root: Option<Entity>,
@@ -1539,17 +1566,46 @@ impl World {
             Ok(entity)
         }
     }
-
-    /// Returns the path of an [`Entity`] relative to a root. If no root is
-    /// specified, the absolute path is returned, starting with the world
-    /// root elements.
+    
+    /// Returns the path of an [`Entity`] following [`Children`]
+	/// 
+	/// If a root is not specified the absolute path is returned.
+	///
+	/// Each segment on the path is defined by [`Name`], if a [`Name`] does not exist on the base entity,
+	/// or one of it's ancestors an error will be returned.
     ///
-    /// The path consists of [`Component`]s that indicate some sort of naming.
-    /// Normally, the [`Name`](crate::name::Name)-component is used for that.
+    /// ```
+    /// # use bevy_ecs::prelude::*;
     ///
-    /// The relative/absolute path has to be continuous among all participating
-    /// entities, except the root, if specified.
-    /// `root` and `entity` being identical is invalid
+    /// let mut world = World::new();
+    ///
+    /// let root = world.spawn(Name::new("Root")).id();
+    /// let child = world.spawn((ChildOf(root), Name::new("Child"))).id();
+    /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
+    ///
+    /// assert_eq!(
+    ///     world.get_path_from_entity(None, grandchild),
+    ///     Ok("Root/Child/Grandchild"),
+    /// );
+    /// assert_eq!(
+    ///     world.get_path_from_entity(Some(child), grandchild),
+    ///     Ok("Grandchild")
+    /// );
+    /// ```
+    pub fn get_path_from_entity(
+        &self,
+        entity: Entity,
+        root: Option<Entity>,
+    ) -> Result<String, EntityPathError> {
+	    self.get_relationship_path_from_entity::<ChildOf>(entity, root)
+	}
+	
+	/// Returns the path of an [`Entity`] following [`R::RelationshipTarget`]. 
+	/// 
+	/// If a root is not specified the absolute path is returned.
+	///
+	/// Each segment on the path is defined by [`Name`], if a [`Name`] does not exist on the base entity,
+	/// or one of it's ancestors an error will be returned.
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
@@ -1569,7 +1625,7 @@ impl World {
     ///     Some("Grandchild")
     /// );
     /// ```
-    pub fn get_path_from_entity<R: Relationship>(
+    pub fn get_relationship_path_from_entity<R: Relationship>(
         &self,
         entity: Entity,
         root: Option<Entity>,
