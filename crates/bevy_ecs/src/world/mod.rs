@@ -70,13 +70,13 @@ use crate::{
         },
     },
 };
+use alloc::string::ToString;
 use alloc::{boxed::Box, string::String, vec::Vec};
 use bevy_platform::sync::atomic::{AtomicU32, Ordering};
 use bevy_ptr::{move_as_ptr, MovingPtr, OwningPtr, Ptr};
 use bevy_utils::prelude::DebugName;
 use core::{any::TypeId, fmt, mem::ManuallyDrop};
 use log::warn;
-use alloc::string::ToString;
 use unsafe_world_cell::{UnsafeEntityCell, UnsafeWorldCell};
 
 /// Stores and exposes operations on [entities](Entity), [components](Component), resources,
