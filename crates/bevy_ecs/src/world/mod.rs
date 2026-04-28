@@ -4805,7 +4805,7 @@ mod tests {
         assert_eq!(world.get_entity_from_path("3/3_1/3_1", None), Ok(child3_1));
 
         let root4 = world.spawn(Name::new("4")).id();
-        world.spawn((Name::new("4_1/4_1_1"), ChildOf(root4))).id();
+        world.spawn((Name::new("4_1/4_1_1"), ChildOf(root4)));
 
         assert_eq!(
             world.get_entity_from_path("4/4_1/4_1_1", None),
