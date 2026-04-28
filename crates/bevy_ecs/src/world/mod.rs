@@ -1496,11 +1496,11 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_entity_from_path(None, &[Name::new("Root"), Name::new("Child"), Name::new("Grandchild")]),
+    ///     world.get_entity_from_path::<ChildOf, Name>(None, &[Name::new("Root"), Name::new("Child"), Name::new("Grandchild")]),
     ///     Some(grandchild)
     /// );
     /// assert_eq!(
-    ///     world.get_entity_from_path(Some(child), &[Name::new("Grandchild")]),
+    ///     world.get_entity_from_path::<ChildOf, Name>(Some(child), &[Name::new("Grandchild")]),
     ///     Some(grandchild)
     /// );
     /// ```
@@ -1553,11 +1553,11 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_path_from_entity(None, grandchild),
+    ///     world.get_path_from_entity::<ChildOf, Name>(None, grandchild),
     ///     Some(vec![Name::new("Root"), Name::new("Child"), Name::new("Grandchild")])
     /// );
     /// assert_eq!(
-    ///     world.get_path_from_entity(Some(child), grandchild),
+    ///     world.get_path_from_entity::<ChildOf, Name>(Some(child), grandchild),
     ///     Some(vec![Name::new("Grandchild")])
     /// );
     /// ```
