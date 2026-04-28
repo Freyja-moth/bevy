@@ -5,10 +5,9 @@ pub use bevy_ecs_macros::FromTemplate;
 use crate::{
     entity::Entity,
     error::Result,
-    name::Name,
     prelude::ChildOf,
     resource::Resource,
-    world::{error::EntityPathError, EntityWorldMut, Mut, World},
+    world::{EntityWorldMut, Mut, World},
 };
 use alloc::{string::String, vec, vec::Vec};
 use variadics_please::all_tuples;
@@ -455,20 +454,16 @@ impl Template for EntityTemplate {
     type Output = Entity;
 
     fn build_template(&self, context: &mut TemplateContext) -> Result<Self::Output> {
-        match self {
-            Self::Entity(entity) => Ok(*entity),
-            Self::EntityPath(path) => {
-                let path = path.split("/").map(Name::from).collect::<Vec<_>>();
-                Ok(context
-                    .entity
-                    .world()
-                    .get_entity_from_path::<ChildOf, Name>(None, path.as_slice())
-                    .ok_or(EntityPathError)?)
-            }
+        Ok(match self {
+            Self::Entity(entity) => *entity,
+            Self::EntityPath(path) => context
+                .entity
+                .world()
+                .get_entity_from_path::<ChildOf>(&path, None)?,
             Self::ScopedEntityIndex(scoped_entity_index) => {
-                Ok(context.get_scoped_entity(*scoped_entity_index))
+                context.get_scoped_entity(*scoped_entity_index)
             }
-        }
+        })
     }
 
     fn clone_template(&self) -> Self {

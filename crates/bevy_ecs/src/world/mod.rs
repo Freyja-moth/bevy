@@ -53,6 +53,7 @@ use crate::{
     error::{ErrorHandler, FallbackErrorHandler},
     lifecycle::{ComponentHooks, RemovedComponentMessages, ADD, DESPAWN, DISCARD, INSERT, REMOVE},
     message::{Message, MessageId, Messages, WriteBatchIds},
+    name::Name,
     observer::Observers,
     prelude::{Add, Despawn, DetectChangesMut, Discard, Insert, Remove},
     query::{DebugCheckedUnwrap, QueryData, QueryFilter, QueryState},
@@ -64,16 +65,18 @@ use crate::{
     world::{
         command_queue::RawCommandQueue,
         error::{
-            EntityDespawnError, EntityMutableFetchError, TryInsertBatchError, TryRunScheduleError,
+            EntityDespawnError, EntityMutableFetchError, EntityPathError, TryInsertBatchError,
+            TryRunScheduleError,
         },
     },
 };
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{boxed::Box, string::String, vec::Vec};
 use bevy_platform::sync::atomic::{AtomicU32, Ordering};
 use bevy_ptr::{move_as_ptr, MovingPtr, OwningPtr, Ptr};
 use bevy_utils::prelude::DebugName;
 use core::{any::TypeId, fmt, mem::ManuallyDrop};
 use log::warn;
+use std::string::ToString;
 use unsafe_world_cell::{UnsafeEntityCell, UnsafeWorldCell};
 
 /// Stores and exposes operations on [entities](Entity), [components](Component), resources,
@@ -1496,39 +1499,44 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_entity_from_path::<ChildOf, Name>(None, &[Name::new("Root"), Name::new("Child"), Name::new("Grandchild")]),
+    ///     world.get_entity_from_path::<ChildOf>("Root/Child/Grandchild", None),
     ///     Some(grandchild)
-    /// );
+    /// )
     /// assert_eq!(
-    ///     world.get_entity_from_path::<ChildOf, Name>(Some(child), &[Name::new("Grandchild")]),
+    ///     world.get_entity_from_path::<ChildOf>("Grandchild", None),
     ///     Some(grandchild)
     /// );
     /// ```
-    pub fn get_entity_from_path<R: Relationship, C: Component + PartialEq + Clone>(
+    pub fn get_entity_from_path<R: Relationship>(
         &self,
+        path: &str,
         root: Option<Entity>,
-        path: &[C],
-    ) -> Option<Entity> {
-        let mut components = self.try_query::<(Entity, &C)>()?;
+    ) -> Result<Entity, EntityPathError> {
+        let mut components = self
+            .try_query::<(Entity, &Name)>()
+            // Since there are no entities with `Name` it's safe to assume the path can't be found
+            .ok_or(EntityPathError::NoMatchingPath(path.into()))?;
         let components = components.query(self);
 
-        let top = path.last()?;
+        let top = path.split("/").last().ok_or(EntityPathError::EmptyPath)?;
 
         let mut potential = components
             .iter()
-            .filter(|(_, c)| *c == top)
+            .filter(|(_, c)| c.as_str() == top)
             .filter(|(entity, _)| {
-                self.get_path_from_entity::<R, C>(root, *entity)
-                    .is_some_and(|p| path == p)
+                self.get_path_from_entity::<R>(*entity, root)
+                    .is_ok_and(|p| path == p)
             })
             .map(|(entity, _)| entity);
 
-        if let Some(entity) = potential.next()
-            && let None = potential.peekable().next()
-        {
-            Some(entity)
+        let Some(entity) = potential.next() else {
+            return Err(EntityPathError::NoMatchingPath(path.into()));
+        };
+
+        if potential.peekable().next().is_some() {
+            Err(EntityPathError::AmbiguousPath(path.into()))
         } else {
-            None
+            Ok(entity)
         }
     }
 
@@ -1553,44 +1561,51 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_path_from_entity::<ChildOf, Name>(None, grandchild),
-    ///     Some(vec![Name::new("Root"), Name::new("Child"), Name::new("Grandchild")])
+    ///     world.get_path_from_entity::<ChildOf>(None, grandchild),
+    ///     Some("Root/Child/Grandchild"),
     /// );
     /// assert_eq!(
-    ///     world.get_path_from_entity::<ChildOf, Name>(Some(child), grandchild),
-    ///     Some(vec![Name::new("Grandchild")])
+    ///     world.get_path_from_entity::<ChildOf>(Some(child), grandchild),
+    ///     Some("Grandchild")
     /// );
     /// ```
-    pub fn get_path_from_entity<R: Relationship, C: Component + PartialEq + Clone>(
+    pub fn get_path_from_entity<R: Relationship>(
         &self,
-        root: Option<Entity>,
         entity: Entity,
-    ) -> Option<Vec<C>> {
-        let mut relationships = self.try_query::<&R>()?;
+        root: Option<Entity>,
+    ) -> Result<String, EntityPathError> {
+        let mut relationships = self
+            .try_query::<&R>()
+            .ok_or(EntityPathError::BrokenPath(entity))?;
         let relationships = relationships.query(self);
-        let mut components = self.try_query::<&C>()?;
+        let mut components = self
+            .try_query::<&Name>()
+            .ok_or(EntityPathError::BrokenPath(entity))?;
         let components = components.query(self);
 
         // This is... not ideal, but I really can't think of a better way of doing it.
         if let Some(root) = root
             && !relationships.iter_ancestors(entity).any(|e| e == root)
         {
-            return None;
+            return Err(EntityPathError::RootIsNotAncestor(root, entity));
         }
 
-        let mut path: Vec<C> = relationships
+        let mut path: Vec<String> = relationships
             .iter_ancestors(entity)
             .take_while(|entity| root.is_none_or(|root| root != *entity))
-            .map(|entity| components.get(entity).ok().cloned())
-            .collect::<Option<Vec<_>>>()?;
+            .map(|entity| components.get(entity).ok().map(ToString::to_string))
+            .collect::<Option<Vec<_>>>()
+            .ok_or(EntityPathError::BrokenPath(entity))?;
 
         path.reverse();
 
-        let base_element = components.get(entity).ok()?;
+        let base_element = components
+            .get(entity)
+            .map_err(|_| EntityPathError::BrokenPath(entity))?;
 
-        path.push(base_element.clone());
+        path.push(base_element.to_string());
 
-        Some(path)
+        Ok(path.join("/"))
     }
 
     /// Despawns the given [`Entity`], if it exists.
@@ -4578,6 +4593,8 @@ mod tests {
 
     #[test]
     fn entity_path_usage() {
+	    use crate::world::EntityPathError;
+		
         let mut world = World::new();
 
         let root1 = world.spawn(Name::new("1")).id();
@@ -4592,142 +4609,120 @@ mod tests {
 
         // All entities contain a `Name`-component.
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, grandchild1_1_1),
-            Some(vec![Name::new("1"), Name::new("1_1"), Name::new("1_1_1")])
+            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, None),
+            Ok("1/1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(
-                None,
-                &[Name::new("1"), Name::new("1_1"), Name::new("1_1_1")]
-            ),
-            Some(grandchild1_1_1)
+            world.get_entity_from_path::<ChildOf>("1/1_1/1_1_1", None),
+            Ok(grandchild1_1_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(root1), grandchild1_1_1),
-            Some(vec![Name::new("1_1"), Name::new("1_1_1")])
+            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, Some(root1)),
+            Ok("1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(
-                Some(root1),
-                &[Name::new("1_1"), Name::new("1_1_1")]
-            ),
-            Some(grandchild1_1_1)
+            world.get_entity_from_path::<ChildOf>("1_1/1_1_1", Some(root1)),
+            Ok(grandchild1_1_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, child2_1),
-            Some(vec![Name::new("2"), Name::new("2_1")])
+            world.get_path_from_entity::<ChildOf>(child2_1, None),
+            Ok("2/2_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(None, &[Name::new("2"), Name::new("2_1")]),
-            Some(child2_1)
+            world.get_entity_from_path::<ChildOf>("2/2_1", None),
+            Ok(child2_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(root2), child2_2),
-            Some(vec![Name::new("2_2")])
+            world.get_path_from_entity::<ChildOf>(child2_2, Some(root2)),
+            Ok("2_2".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(Some(root2), &[Name::new("2_2")]),
-            Some(child2_2)
+            world.get_entity_from_path::<ChildOf>("2_2", Some(root2)),
+            Ok(child2_2)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(root1), child2_2),
-            None
+            world.get_path_from_entity::<ChildOf>(child2_2, Some(root1)),
+            Err(EntityPathError::RootIsNotAncestor(root1, child2_2))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(Some(root1), &[Name::new("2_2")]),
-            None
+            world.get_entity_from_path::<ChildOf>("2_2", Some(root1)),
+            Err(EntityPathError::NoMatchingPath("2_2".into()))
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(root1), child2_2),
-            None
-        );
-        assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(Some(root1), &[Name::new("arbitrary")]),
-            None
+            world.get_entity_from_path::<ChildOf>("arbitrary", Some(root1)),
+            Err(EntityPathError::NoMatchingPath("arbitrary".into())),
         );
 
         // Create a child with the name of a sibling.
         let child1_1_duplicate = world.spawn((ChildOf(root1), Name::new("1_1"))).id();
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, grandchild1_1_1),
-            Some(vec![Name::new("1"), Name::new("1_1"), Name::new("1_1_1")])
+            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, None),
+            Ok("1/1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(
-                None,
-                &[Name::new("1"), Name::new("1_1"), Name::new("1_1_1")]
+            world.get_entity_from_path::<ChildOf>(
+                "1/1_1/1_1_1",
+                None
             ),
-            Some(grandchild1_1_1),
+            Ok(grandchild1_1_1),
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(child1_1), grandchild1_1_1),
-            Some(vec![Name::new("1_1_1")])
+            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, Some(child1_1)),
+            Ok("1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(Some(child1_1), &[Name::new("1_1_1")]),
-            Some(grandchild1_1_1)
+            world.get_entity_from_path::<ChildOf>("1_1_1", Some(child1_1)),
+            Ok(grandchild1_1_1)
         );
         world.despawn(child1_1_duplicate);
 
         // Remove `Name` from a root.
         world.entity_mut(root1).remove::<Name>();
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, grandchild1_1_1),
-            None
+            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, None),
+            Err(EntityPathError::BrokenPath(grandchild1_1_1))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(
-                None,
-                &[Name::new("1"), Name::new("1_1"), Name::new("1_1_1")]
-            ),
-            None
+            world.get_entity_from_path::<ChildOf>("1/1_1/1_1_1", None,),
+            Err(EntityPathError::NoMatchingPath("1/1_1/1_1_1".into()))
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(root1), grandchild1_1_1),
-            Some(vec![Name::new("1_1"), Name::new("1_1_1")])
+            world.get_path_from_entity::<ChildOf>(grandchild1_1_1, Some(root1)),
+            Ok("1_1/1_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(
-                Some(root1),
-                &[Name::new("1_1"), Name::new("1_1_1")]
-            ),
-            Some(grandchild1_1_1)
+            world.get_entity_from_path::<ChildOf>("1_1/1_1_1", Some(root1)),
+            Ok(grandchild1_1_1)
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, child2_1),
-            Some(vec![Name::new("2"), Name::new("2_1")])
+            world.get_path_from_entity::<ChildOf>(child2_1, None),
+            Ok("2/2_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(None, &[Name::new("2"), Name::new("2_1")]),
-            Some(child2_1)
+            world.get_entity_from_path::<ChildOf>("2/2_1", None),
+            Ok(child2_1)
         );
 
         // Also remove `Name` from a child.
         world.entity_mut(child2_1).remove::<Name>();
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, child2_1),
-            None
+            world.get_path_from_entity::<ChildOf>(child2_1, None),
+            Err(EntityPathError::BrokenPath(child2_1))
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(None, &[Name::new("2"), Name::new("2_1")]),
-            None
+            world.get_entity_from_path::<ChildOf>("2/2_1", None),
+            Err(EntityPathError::NoMatchingPath("2/2_1".into()))
         );
         assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(Some(child2_1), grandchild2_1_1),
-            Some(vec![Name::new("2_1_1")])
+            world.get_path_from_entity::<ChildOf>(grandchild2_1_1, Some(child2_1)),
+            Ok("2_1_1".into())
         );
         assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(Some(child2_1), &[Name::new("2_1_1")]),
-            Some(grandchild2_1_1)
+            world.get_entity_from_path::<ChildOf>("2_1_1", Some(child2_1)),
+            Ok(grandchild2_1_1)
         );
-        assert_eq!(
-            world.get_path_from_entity::<ChildOf, Name>(None, root2),
-            Some(vec![Name::new("2")])
-        );
-        assert_eq!(
-            world.get_entity_from_path::<ChildOf, Name>(None, &[Name::new("2")]),
-            Some(root2)
-        );
+        assert_eq!(world.get_path_from_entity::<ChildOf>(root2, None), Ok("2".into()));
+        assert_eq!(world.get_entity_from_path::<ChildOf>("2", None), Ok(root2));
     }
 
     #[test]

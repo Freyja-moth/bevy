@@ -1,6 +1,6 @@
 //! Contains error types returned by bevy's schedule.
 
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 use bevy_utils::prelude::DebugName;
 
 use crate::{
@@ -87,9 +87,24 @@ pub enum ResourceFetchError {
 ///
 /// [`Component`]: crate::component::Component
 /// [`Relationship`]: crate::relationship::Relationship
-#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
-#[error("Entity path cannot be resolved")]
-pub struct EntityPathError;
+#[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
+pub enum EntityPathError {
+	/// Path is empty
+    #[error("Entity path is empty")]
+    EmptyPath,
+    /// Root entity is not an ancestor of the starting entity
+    #[error("{0} is not an ancestor of {1}")]
+    RootIsNotAncestor(Entity, Entity),
+    /// One of the entities along the path does not contain a `Name` component
+    #[error("{0}, or one of it's ancestors does not contain a `Name` component")]
+    BrokenPath(Entity),
+    /// No paths match the given path
+    #[error("{0} does not match any entity")]
+    NoMatchingPath(String),
+    /// More than one paths match the given path
+    #[error("{0} matches multiple entities")]
+    AmbiguousPath(String),
+}
 
 #[cfg(test)]
 mod tests {
