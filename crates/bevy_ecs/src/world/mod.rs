@@ -1486,10 +1486,6 @@ impl World {
     /// An empty path is invalid. Also every component that is referenced in the
     /// path has to be unique among all its sibling's components to use this method.
     ///
-    /// Note: This method uses a world query to get the world root entities, if no root is given.
-    /// It also iterates over all children found. This leads to a complexity growing with the
-    /// amount of all the children (and possibly entities without a parent) along the path.
-    ///
     /// ```
     /// # use bevy_ecs::prelude::*;
     ///
@@ -1545,10 +1541,7 @@ impl World {
     ///
     /// The relative/absolute path has to be continuous among all participating
     /// entities, except the root, if specified.
-    /// `root` and `entity` being identical is invalid. This method allows
-    /// siblings with identical components, in contrast to [`get_entity_from_path`](World::get_entity_from_path).
-    /// It is recommended to avoid this to have a consistent environment for
-    /// the two methods.
+    /// `root` and `entity` being identical is invalid
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
