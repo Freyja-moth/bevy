@@ -455,7 +455,7 @@ impl Template for EntityTemplate {
     fn build_template(&self, context: &mut TemplateContext) -> Result<Self::Output> {
         Ok(match self {
             Self::Entity(entity) => *entity,
-            Self::EntityPath(path) => context.entity.world().get_entity_from_path(&path, None)?,
+            Self::EntityPath(path) => context.entity.world().get_entity_from_path(path, None)?,
             Self::ScopedEntityIndex(scoped_entity_index) => {
                 context.get_scoped_entity(*scoped_entity_index)
             }

@@ -76,7 +76,7 @@ use bevy_ptr::{move_as_ptr, MovingPtr, OwningPtr, Ptr};
 use bevy_utils::prelude::DebugName;
 use core::{any::TypeId, fmt, mem::ManuallyDrop};
 use log::warn;
-use std::string::ToString;
+use alloc::string::ToString;
 use unsafe_world_cell::{UnsafeEntityCell, UnsafeWorldCell};
 
 /// Stores and exposes operations on [entities](Entity), [components](Component), resources,
@@ -1487,7 +1487,7 @@ impl World {
     /// "Root/Child/Grandchild" will match
     ///
     /// ```
-    /// "Root", "Child", "Grandchild"]
+    /// ["Root", "Child", "Grandchild"]
     /// ["Root/Child", "Grandchild"]
     /// ```
     ///
@@ -1615,11 +1615,11 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_path_from_entity(None, grandchild),
+    ///     world.get_path_from_entity(grandchild, None),
     ///     Ok("Root/Child/Grandchild"),
     /// );
     /// assert_eq!(
-    ///     world.get_path_from_entity(Some(child), grandchild),
+    ///     world.get_path_from_entity(grandchild, Some(child)),
     ///     Ok("Grandchild")
     /// );
     /// ```
@@ -1648,12 +1648,12 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_path_from_entity::<ChildOf>(None, grandchild),
-    ///     Some("Root/Child/Grandchild"),
+    ///     world.get_relationship_path_from_entity::<ChildOf>(grandchild, Nonee),
+    ///     Ok("Root/Child/Grandchild"),
     /// );
     /// assert_eq!(
-    ///     world.get_path_from_entity::<ChildOf>(Some(child), grandchild),
-    ///     Some("Grandchild")
+    ///     world.get_relationship_path_from_entity::<ChildOf>(grandchild, Some(child)),
+    ///     Ok("Grandchild")
     /// );
     /// ```
     pub fn get_relationship_path_from_entity<R: Relationship>(
