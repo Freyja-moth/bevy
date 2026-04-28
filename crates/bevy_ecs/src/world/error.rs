@@ -75,6 +75,17 @@ pub enum ResourceFetchError {
     NoResourceAccess(ComponentId),
 }
 
+/// An error returned when a path cannot be resolved.
+///
+/// This could be due to
+///
+/// - The path not matching
+/// - The path being ambigious
+/// - The [`Relationship`]/[`Component`] being used aren't registered.
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
+#[error("Entity path cannot be resolved")]
+pub struct EntityPathError;
+
 #[cfg(test)]
 mod tests {
     use crate::{

@@ -5,10 +5,12 @@ pub use bevy_ecs_macros::FromTemplate;
 use crate::{
     entity::Entity,
     error::Result,
+    name::Name,
+    prelude::ChildOf,
     resource::Resource,
-    world::{EntityWorldMut, Mut, World},
+    world::{error::EntityPathError, EntityWorldMut, Mut, World},
 };
-use alloc::{vec, vec::Vec};
+use alloc::{string::String, vec, vec::Vec};
 use variadics_please::all_tuples;
 
 /// A [`Template`] is something that, given a spawn context (target [`Entity`], [`World`], etc), can produce a [`Template::Output`].
@@ -405,6 +407,8 @@ pub trait SpecializeFromTemplate: Sized {}
 pub enum EntityReference {
     /// A reference to a specific [`Entity`]
     Entity(Entity),
+    /// A path to a specific [`Entity`]. Resolved via [`World::get_entity_from_path::<ChildOf, Name>`]
+    EntityPath(String),
     /// A reference to an entity via a [`ScopedEntityIndex`]
     ScopedEntityIndex(ScopedEntityIndex),
 }
@@ -435,21 +439,42 @@ impl From<Entity> for EntityReference {
     }
 }
 
+impl From<String> for EntityReference {
+    fn from(path: String) -> Self {
+        Self::EntityPath(path)
+    }
+}
+
+impl From<&'static str> for EntityReference {
+    fn from(path: &'static str) -> Self {
+        Self::EntityPath(path.into())
+    }
+}
+
 impl Template for EntityReference {
     type Output = Entity;
 
     fn build_template(&self, context: &mut TemplateContext) -> Result<Self::Output> {
-        Ok(match self {
-            Self::Entity(entity) => *entity,
-            Self::ScopedEntityIndex(scoped_entity_index) => {
-                context.get_scoped_entity(*scoped_entity_index)
+        match self {
+            Self::Entity(entity) => Ok(*entity),
+            Self::EntityPath(path) => {
+                let path = path.split("/").map(Name::from).collect::<Vec<_>>();
+                Ok(context
+                    .entity
+                    .world()
+                    .get_entity_from_path::<ChildOf, Name>(None, path.as_slice())
+                    .ok_or(EntityPathError)?)
             }
-        })
+            Self::ScopedEntityIndex(scoped_entity_index) => {
+                Ok(context.get_scoped_entity(*scoped_entity_index))
+            }
+        }
     }
 
     fn clone_template(&self) -> Self {
         match self {
             Self::Entity(entity) => Self::Entity(*entity),
+            Self::EntityPath(path) => Self::EntityPath(path.clone()),
             Self::ScopedEntityIndex(scoped_entity_index) => {
                 Self::ScopedEntityIndex(*scoped_entity_index)
             }
