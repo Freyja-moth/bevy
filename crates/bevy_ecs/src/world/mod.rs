@@ -1479,8 +1479,19 @@ impl World {
 
     /// Returns the entity that matches the given path along [`Children`].
     ///
-    /// Segments of the path are defined by [`Name`].
+    /// Segments of the path are defined by [`Name`] seperated by /. Names will / in them will be
+    /// accounted for, unless they are the last segment, in which case the path will not be matched. 
     ///
+    /// E.g: 
+    ///
+    /// "Root/Child/Grandchild" will match
+    ///
+    /// ["Root", "Child", "Grandchild"]
+    /// ["Root/Child", "Grandchild"]
+    ///
+    /// But not 
+    ///
+    /// ["Root/Child/Grandchild"]
     /// If multiple matching paths are found an error will be returned.
     ///
     /// ```
@@ -1511,7 +1522,19 @@ impl World {
 
     /// Returns the entity that matches the given path along [`R::RelationshipTarget`].
     ///
-    /// Segments of the path are defined by [`Name`].
+    /// Segments of the path are defined by [`Name`] seperated by /. Names will / in them will be
+    /// accounted for, unless they are the last segment, in which case the path will not be matched. 
+    ///
+    /// E.g: 
+    ///
+    /// "Root/Child/Grandchild" will match
+    ///
+    /// ["Root", "Child", "Grandchild"]
+    /// ["Root/Child", "Grandchild"]
+    ///
+    /// But not 
+    ///
+    /// ["Root/Child/Grandchild"]
     ///
     /// If multiple matching paths are found an error will be returned.
     ///
@@ -4766,6 +4789,17 @@ mod tests {
         );
         assert_eq!(world.get_path_from_entity(root2, None), Ok("2".into()));
         assert_eq!(world.get_entity_from_path("2", None), Ok(root2));
+
+
+        let root3 = world.spawn(Name::new("3/3_1")).id();
+let child3_1 = world.spawn((Name::new("3_1"), ChildOf(root3))).id();
+
+        assert_eq!(world.get_entity_from_path("3/3_1/3_1", None), Ok(child3_1));
+
+        let root4 = world.spawn(Name::new("4")).id();
+        let child_4_1 = world.spawn((Name::new("4_1/4_1_1"), ChildOf(root4))).id();
+
+            assert_eq!(world.get_entity_from_path("4/4_1/4_1_1", None), Err(EntityPathError::NoMatchingPath("4/4_1/4_1_1".into())) );
     }
 
     #[test]

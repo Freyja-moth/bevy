@@ -5,7 +5,6 @@ pub use bevy_ecs_macros::FromTemplate;
 use crate::{
     entity::Entity,
     error::Result,
-    prelude::ChildOf,
     resource::Resource,
     world::{EntityWorldMut, Mut, World},
 };

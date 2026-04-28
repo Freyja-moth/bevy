@@ -76,20 +76,9 @@ pub enum ResourceFetchError {
 }
 
 /// An error returned when a path cannot be resolved.
-///
-/// This could be due to
-///
-/// - The path not matching
-/// - The path being ambiguous
-///
-/// This can also be returned if the [`Component`] / [`Relationship`] you are using to resolve the
-/// path are not registered. However if this is the case the path would not be valid anyways.
-///
-/// [`Component`]: crate::component::Component
-/// [`Relationship`]: crate::relationship::Relationship
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
 pub enum EntityPathError {
-	/// Path is empty
+    /// Path is empty
     #[error("Entity path is empty")]
     EmptyPath,
     /// Root entity is not an ancestor of the starting entity
