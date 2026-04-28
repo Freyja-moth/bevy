@@ -439,19 +439,19 @@ impl From<Entity> for EntityTemplate {
     }
 }
 
-impl From<String> for EntityReference {
+impl From<String> for EntityTemplate {
     fn from(path: String) -> Self {
         Self::EntityPath(path)
     }
 }
 
-impl From<&'static str> for EntityReference {
+impl From<&'static str> for EntityTemplate {
     fn from(path: &'static str) -> Self {
         Self::EntityPath(path.into())
     }
 }
 
-impl Template for EntityReference {
+impl Template for EntityTemplate {
     type Output = Entity;
 
     fn build_template(&self, context: &mut TemplateContext) -> Result<Self::Output> {
