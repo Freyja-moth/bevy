@@ -1516,7 +1516,7 @@ impl World {
     /// ```
     ///
     /// [`Name`]: crate::name::Name
-	/// [`Children`]: crate::hierarchy::Children
+    /// [`Children`]: crate::hierarchy::Children
     pub fn get_entity_from_path(
         &self,
         path: &str,
@@ -1524,7 +1524,7 @@ impl World {
     ) -> Result<Entity, EntityPathError> {
         self.get_entity_from_relationship_path::<ChildOf>(path, root)
     }
-    
+
     /// Returns the entity that matches the given path along `R::RelationshipTarget`.
     ///
     /// Segments of the path are defined by [`Name`] separated by /. Names will / in them will be
@@ -1565,7 +1565,7 @@ impl World {
     /// ```
     ///
     /// [`Name`]: crate::name::Name
-	/// [`Children`]: crate::hierarchy::Children
+    /// [`Children`]: crate::hierarchy::Children
     pub fn get_entity_from_relationship_path<R: Relationship>(
         &self,
         path: &str,
@@ -1627,7 +1627,7 @@ impl World {
     /// ```
     ///
     /// [`Name`]: crate::name::Name
-	/// [`Children`]: crate::hierarchy::Children
+    /// [`Children`]: crate::hierarchy::Children
     pub fn get_path_from_entity(
         &self,
         entity: Entity,
@@ -1664,7 +1664,7 @@ impl World {
     /// ```
     ///
     /// [`Name`]: crate::name::Name
-	/// [`Children`]: crate::hierarchy::Children
+    /// [`Children`]: crate::hierarchy::Children
     pub fn get_relationship_path_from_entity<R: Relationship>(
         &self,
         entity: Entity,

@@ -880,7 +880,7 @@ pub mod tests {
         pub struct Attack(u8);
 
         #[derive(Component, PartialEq, Eq, Clone, Default, Debug)]
-        pub struct Defence(u8);
+        pub struct Defense(u8);
 
         fn items() -> impl Scene {
             bsn! {
@@ -891,7 +891,7 @@ pub mod tests {
                         #Sword
                         Weapon
                         Attack(10)
-                        Defence(2)
+                        Defense(2)
                     )]
                 )]
             }
@@ -927,8 +927,8 @@ pub mod tests {
 
         assert_eq!(attack, Some(&Attack(10)));
 
-        let defence = app.world_mut().get(sword);
+        let defense = app.world_mut().get(sword);
 
-        assert_eq!(defence, Some(&Defence(2)));
+        assert_eq!(defense, Some(&Defense(2)));
     }
 }
