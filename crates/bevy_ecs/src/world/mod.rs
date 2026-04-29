@@ -1486,22 +1486,18 @@ impl World {
     ///
     /// "Root/Child/Grandchild" will match
     ///
-    /// ```
-    /// ["Root", "Child", "Grandchild"]
-    /// ["Root/Child", "Grandchild"]
-    /// ```
+    /// - ["Root", "Child", "Grandchild"]
+    /// - ["Root/Child", "Grandchild"]
     ///
     /// But not
     ///
-    /// ```
-    /// ["Root/Child/Grandchild"]
-    /// ```
+    /// - ["Root/Child/Grandchild"]
     ///
     /// If multiple matching paths are found an error will be returned.
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
-    ///
+    /// # fn path_test() {
     /// let mut world = World::new();
     ///
     /// let root = world.spawn(Name::new("Root")).id();
@@ -1511,12 +1507,16 @@ impl World {
     /// assert_eq!(
     ///     world.get_entity_from_path("Root/Child/Grandchild", None),
     ///     Ok(grandchild)
-    /// )
+    /// );
     /// assert_eq!(
     ///     world.get_entity_from_path("Grandchild", None),
     ///     Ok(grandchild)
     /// );
+    /// # }
     /// ```
+    ///
+    /// [`Name`]: crate::name::Name
+	/// [`Children`]: crate::hierarchy::Children
     pub fn get_entity_from_path(
         &self,
         path: &str,
@@ -1524,8 +1524,8 @@ impl World {
     ) -> Result<Entity, EntityPathError> {
         self.get_entity_from_relationship_path::<ChildOf>(path, root)
     }
-
-    /// Returns the entity that matches the given path along [`R::RelationshipTarget`].
+    
+    /// Returns the entity that matches the given path along `R::RelationshipTarget`.
     ///
     /// Segments of the path are defined by [`Name`] separated by /. Names will / in them will be
     /// accounted for, unless they are the last segment, in which case the path will not be matched.
@@ -1534,22 +1534,19 @@ impl World {
     ///
     /// "Root/Child/Grandchild" will match
     ///
-    /// ```
-    /// ["Root", "Child", "Grandchild"]
-    /// ["Root/Child", "Grandchild"]
-    /// ```
+    /// - ["Root", "Child", "Grandchild"]
+    /// - ["Root/Child", "Grandchild"]
     ///
     /// But not
     ///
-    /// ```
-    /// ["Root/Child/Grandchild"]
-    /// ```
+    /// - ["Root/Child/Grandchild"]
     ///
     /// If multiple matching paths are found an error will be returned.
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
     ///
+    /// # fn path_test() {
     /// let mut world = World::new();
     ///
     /// let root = world.spawn(Name::new("Root")).id();
@@ -1559,12 +1556,16 @@ impl World {
     /// assert_eq!(
     ///     world.get_entity_from_relationship_path::<ChildOf>("Root/Child/Grandchild", None),
     ///     Ok(grandchild)
-    /// )
+    /// );
     /// assert_eq!(
     ///     world.get_entity_from_relationship_path::<ChildOf>("Grandchild", None),
     ///     Ok(grandchild)
     /// );
+    /// # }
     /// ```
+    ///
+    /// [`Name`]: crate::name::Name
+	/// [`Children`]: crate::hierarchy::Children
     pub fn get_entity_from_relationship_path<R: Relationship>(
         &self,
         path: &str,
@@ -1607,7 +1608,7 @@ impl World {
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
-    ///
+    /// # fn path_test() {
     /// let mut world = World::new();
     ///
     /// let root = world.spawn(Name::new("Root")).id();
@@ -1616,13 +1617,17 @@ impl World {
     ///
     /// assert_eq!(
     ///     world.get_path_from_entity(grandchild, None),
-    ///     Ok("Root/Child/Grandchild"),
+    ///     Ok("Root/Child/Grandchild".into()),
     /// );
     /// assert_eq!(
     ///     world.get_path_from_entity(grandchild, Some(child)),
-    ///     Ok("Grandchild")
+    ///     Ok("Grandchild".into())
     /// );
+    /// # }
     /// ```
+    ///
+    /// [`Name`]: crate::name::Name
+	/// [`Children`]: crate::hierarchy::Children
     pub fn get_path_from_entity(
         &self,
         entity: Entity,
@@ -1631,7 +1636,7 @@ impl World {
         self.get_relationship_path_from_entity::<ChildOf>(entity, root)
     }
 
-    /// Returns the path of an [`Entity`] following [`R::RelationshipTarget`].
+    /// Returns the path of an [`Entity`] following `R::RelationshipTarget`.
     ///
     /// If a root is not specified the absolute path is returned.
     ///
@@ -1640,7 +1645,7 @@ impl World {
     ///
     /// ```
     /// # use bevy_ecs::prelude::*;
-    ///
+    /// # fn path_test() {
     /// let mut world = World::new();
     ///
     /// let root = world.spawn(Name::new("Root")).id();
@@ -1648,14 +1653,18 @@ impl World {
     /// let grandchild = world.spawn((ChildOf(child), Name::new("Grandchild"))).id();
     ///
     /// assert_eq!(
-    ///     world.get_relationship_path_from_entity::<ChildOf>(grandchild, Nonee),
-    ///     Ok("Root/Child/Grandchild"),
+    ///     world.get_relationship_path_from_entity::<ChildOf>(grandchild, None),
+    ///     Ok("Root/Child/Grandchild".into()),
     /// );
     /// assert_eq!(
     ///     world.get_relationship_path_from_entity::<ChildOf>(grandchild, Some(child)),
-    ///     Ok("Grandchild")
+    ///     Ok("Grandchild".into())
     /// );
+    /// # }
     /// ```
+    ///
+    /// [`Name`]: crate::name::Name
+	/// [`Children`]: crate::hierarchy::Children
     pub fn get_relationship_path_from_entity<R: Relationship>(
         &self,
         entity: Entity,
