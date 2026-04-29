@@ -4,7 +4,7 @@ authors: ["@Freyja-moth"]
 pull_requests: [24018]
 ---
 
-Paths can now be resolved to an entity and vise versa.
+Paths can now be resolved to an entity and vice versa.
 These use the `Name` component, following the `ChildOf` relationship.
 
 ```rust
