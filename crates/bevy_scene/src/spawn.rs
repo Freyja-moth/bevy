@@ -847,7 +847,7 @@ impl QueuedScenes {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::{Scene, ScenePlugin, WorldSceneExt};
     use bevy_app::{App, TaskPoolPlugin};
     use bevy_asset::AssetPlugin;
@@ -910,7 +910,7 @@ pub mod tests {
         app.add_plugins((
             TaskPoolPlugin::default(),
             AssetPlugin::default(),
-            ScenePlugin::default(),
+            ScenePlugin,
         ));
 
         app.world_mut().spawn_scene(items()).unwrap();
