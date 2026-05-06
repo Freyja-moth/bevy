@@ -6,7 +6,7 @@ use bevy_ecs::{
     component::Component,
     entity::Entity,
     entity_disabling::Disabled,
-    hierarchy::ChildOf,
+    hierarchy::Children,
     message::MessageReader,
     query::{Allow, With},
     system::{Commands, Query},
@@ -346,7 +346,7 @@ pub fn disable_entities_when_state<S: States>(
         if (when.state_transition_evaluator)(transition) {
             commands
                 .entity(entity)
-                .insert_recursive::<ChildOf>(Disabled);
+                .insert_recursive::<Children>(Disabled);
         }
     }
 }
@@ -427,7 +427,7 @@ pub fn disable_entities_on_exit_state<S: States>(
         if exit.0 == *exited {
             commands
                 .entity(entity)
-                .insert_recursive::<ChildOf>(Disabled);
+                .insert_recursive::<Children>(Disabled);
         }
     }
 }
@@ -505,7 +505,7 @@ pub fn disable_entities_on_enter_state<S: States>(
         if enter.0 == *entered {
             commands
                 .entity(entity)
-                .insert_recursive::<ChildOf>(Disabled);
+                .insert_recursive::<Children>(Disabled);
         }
     }
 }
@@ -593,7 +593,7 @@ pub fn enable_entities_when_state<S: States>(
         if (when.state_transition_evaluator)(transition) {
             commands
                 .entity(entity)
-                .remove_recursive::<ChildOf, Disabled>();
+                .remove_recursive::<Children, Disabled>();
         }
     }
 }
@@ -674,7 +674,7 @@ pub fn enable_entities_on_exit_state<S: States>(
         if exit.0 == *exited {
             commands
                 .entity(entity)
-                .remove_recursive::<ChildOf, Disabled>();
+                .remove_recursive::<Children, Disabled>();
         }
     }
 }
@@ -752,7 +752,7 @@ pub fn enable_entities_on_enter_state<S: States>(
         if enter.0 == *entered {
             commands
                 .entity(entity)
-                .remove_recursive::<ChildOf, Disabled>();
+                .remove_recursive::<Children, Disabled>();
         }
     }
 }
